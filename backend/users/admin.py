@@ -8,11 +8,11 @@ class UserProfileInline(admin.StackedInline):
     can_delete = False
 
 class CustomUserAdmin(UserAdmin):
-    list_display = ('username', 'email', 'user_type', 'phone', 'city', 'is_verified', 'is_staff')
+    list_display = ('username', 'email', 'user_type', 'phone_number', 'city', 'is_verified', 'is_staff')
     list_filter = ('user_type', 'is_verified', 'is_staff', 'city')
     fieldsets = UserAdmin.fieldsets + (
         ('Additional Info', {
-            'fields': ('user_type', 'phone', 'address', 'city', 'state', 'pincode', 'is_verified')
+            'fields': ('user_type', 'phone_number', 'address', 'city', 'state', 'pincode', 'is_verified')
         }),
     )
     inlines = [UserProfileInline]

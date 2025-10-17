@@ -1,6 +1,6 @@
 # from django.shortcuts import render
 from .models import User, UserProfile
-from .serializers import UserProfileSerializer, UserRegistrationSerializer, UserSerializer, LoginSerializer, UserUpdateSerializer
+from .serializers import UserProfileSerializer, ChangePasswordSerializer, UserSerializer, LoginSerializer, UserUpdateSerializer, PasswordResetRequestSerializer
 from django.contrib.auth import update_session_auth_hash
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -134,7 +134,7 @@ def user_login(request):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def logout(request):
+def user_logout(request):
     try: 
         refresh_token = request.data.get('refresh')
         if refresh_token:
@@ -288,6 +288,99 @@ def user_dashboard(request):
         dashboard_data['quick_stats'] = {
             'total_users': User.objects.count(),
             'total_equipment': Equipment.objects.count(),
-            'pending_verifications': Equipment.objects.filter(status = 'submitted').count()
+            'pending_verifications': Equipment.objects.filter(status = 'submitted').count(),
+            'loan_applications':LoanApplication.objects.filter(is_verified = False).count()
         }
     return Response(dashboard_data)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def change_password(request):
+    user = request.user
+    serializer = ChangePasswordSerializer(data = request.data)
+
+    if serializer.is_valid():
+        if not user.check_password(serializer.validated_data['old_password']):
+            return Response({
+                'error':'Current password is incorrect.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        user.set_password(serializer.validated_data['new_password'])
+        user.save()
+        
+        update_session_auth_hash(request, user)
+        return Response({
+            'message':'Password updated successfully.'
+        }, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def password_reset_request(request):
+    user = request.user
+    serializer = PasswordResetRequestSerializer(data = request.data)
+
+    if serializer.is_valid():
+        # In a real implementation, you would:
+        # 1. Generate reset token
+        # 2. Send email with reset link
+        # 3. Return success message
+        
+        email = serializer.validated_data['email']
+        
+        # For now, just return success message
+        return Response({
+            'message':'if an account with this mail exit, a password link has been sent.'
+        }, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def password_reset_confirm(request):
+    serializer = PasswordResetRequestSerializer(data=request.data)
+    
+    if serializer.is_valid():
+        # In a real implementation, you would:
+        # 1. Verify token and uid
+        # 2. Find user and set new password
+        # 3. Return success message
+        
+        return Response({
+            'message': 'Password has been reset successfully'
+        }, status=status.HTTP_200_OK)
+    
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def check_auth(request):
+    user = request.user
+    serializer = UserSerializer(user)
+    
+    return Response({
+        'authenticated': True,
+        'user': serializer.data
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_permissions(request):
+    user = request.user
+
+    permissions = {
+        'can_list_equipment': user.user_type in ['vendor', 'admin'],
+        'can_rent_equipment': user.user_type in ['customer', 'admin'],
+        'can_manage_users': user.user_type == 'admin',
+        'can_manage_franchises': user.user_type in ['admin', 'franchise'],
+        'can_process_loans': user.user_type in ['admin', 'franchise'],
+        'can_view_analytics': user.user_type == 'admin',
+        'can_manage_warehouse': user.user_type in ['admin', 'staff'],
+    }
+    
+    return Response(permissions, status=status.HTTP_200_OK)
+

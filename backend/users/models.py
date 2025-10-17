@@ -13,7 +13,7 @@ class User(AbstractUser):
         ('franchise owner', 'Franchise owner'),
     )
     user_type = models.CharField(max_length=50, choices=USER_TYPES, default='customer')
-    phone_regex = RegexValidator(regex=r'^\+?1?\d{9, 15}$', message=' Phone number must be entered in the format :"+999999". UP to 15 digit allowed')
+    phone_regex = RegexValidator(regex=r'^\+?1?\d{9,15}$', message=' Phone number must be entered in the format :"+999999". UP to 15 digit allowed')
     phone_number = models.CharField(max_length=15, unique=True)
     address = models.TextField()
     city = models.CharField(max_length=100)

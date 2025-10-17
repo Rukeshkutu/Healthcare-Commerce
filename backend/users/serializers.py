@@ -105,9 +105,12 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return attrs
 
     
-    def create(self, validated_date):
-        validated_date.pop('password')
-        user = User.objects.create_user(**validated_date)
+    def create(self, validated_data):
+        password = validated_data.pop('password')
+        validated_data.pop('password2')
+        user = User.objects.create_user(**validated_data)
+        user.set_password(password)
+        user.save()
         UserProfile.objects.create(user = user)
 
         return user
@@ -141,11 +144,11 @@ class LoginSerializer(serializers.ModelSerializer):
 
 class ChangePasswordSerializer(serializers.ModelSerializer):
     old_password = serializers.CharField(required = True, write_only = True)
-    new_password = serializers.CharField(required = True, read_only = True, validators = [validate_password])
-    new_password2 = serializers.CharField(required = True, read_only  = True)
+    new_password = serializers.CharField(required = True, validators = [validate_password])
+    new_password2 = serializers.CharField(required = True)
 
     def validate (self, attrs):
-        if attrs ['new_password'] != attrs['newpassword2']:
+        if attrs ['new_password'] != attrs['newpasword2']:
             raise serializers.ValidationError({'new_password':'Password field didnot match.'})
         return attrs
     
