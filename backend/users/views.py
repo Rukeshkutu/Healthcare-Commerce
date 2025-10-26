@@ -4,6 +4,8 @@ from .serializers import UserProfileSerializer, ChangePasswordSerializer, UserSe
 from django.contrib.auth import update_session_auth_hash
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
+from django.contrib.auth import authenticate
+from django.contrib.auth.password_validation import validate_password
 # from django.contrib.auth import authenticate
 
 from rest_framework import status
@@ -13,6 +15,14 @@ from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, Ou
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
+from rest_framework.validators import UniqueValidator
+
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.conf import settings
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 
 from equipment.models import Equipment
 # class RegisterView(generics.CreateAPIView):
@@ -327,7 +337,14 @@ def password_reset_request(request):
         # 1. Generate reset token
         # 2. Send email with reset link
         # 3. Return success message
-        
+        # try: 
+        #     email = serializer.validated_data['email']
+        #     user = User.objects.get(email = email, is_active = True)
+
+        #     token_generator = PasswordResetTokenGenerator()
+        #     token  = token_generator.make_token(user)
+
+        #     uid = urlsafe_base64_encode(force_bytes(user.pk))
         email = serializer.validated_data['email']
         
         # For now, just return success message
