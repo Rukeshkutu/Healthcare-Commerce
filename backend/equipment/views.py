@@ -1,12 +1,3 @@
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from django.db.models import Q
-
-from .serializer import MedicalEqipmentSerializer, EquipmentCategorySerializer, EquipmentInspectionSerializer
-from .models import Equipment, EquipmentCategory, EquipmentInspection
-
 # from django.shortcuts import render
 # from rest_framework import viewsets, status, filters
 # from rest_framework.decorators import action
@@ -112,23 +103,31 @@ from .models import Equipment, EquipmentCategory, EquipmentInspection
 #             return Response(serializer.data, status=status.HTTP_201_CREATED)
         
 #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from django.db.models import Q
+from .models import Equipment, EquipmentCategory, EquipmentInspection
+from .serializer import MedicalEquipmentSerializer, EquipmentCategorySerializer, EquipmentInspectionSerializer
 
 @api_view(['GET', 'POST'])
-@permission_classes([AllowAny])#isauthenticated
+@permission_classes([IsAuthenticated])
 def equipment_list(request):
     if request.method == 'GET':
+        # Filter equipment based on query parameters
         category = request.GET.get('category')
         condition = request.GET.get('condition')
         transaction_type = request.GET.get('transaction_type')
         min_price = request.GET.get('min_price')
         max_price = request.GET.get('max_price')
-
-        queryset = Equipment.objects.filter(is_verified =True, is_available =True)
+        
+        queryset = Equipment.objects.filter(is_verified=True, is_available=True)
         
         if category:
-            queryset = queryset.filter(category__id = category)
+            queryset = queryset.filter(category__id=category)
         if condition:
-            queryset = queryset.filter(condition =condition)
+            queryset = queryset.filter(condition=condition)
         if transaction_type:
             queryset = queryset.filter(transaction_type=transaction_type)
         if min_price:
@@ -136,85 +135,94 @@ def equipment_list(request):
         if max_price:
             queryset = queryset.filter(sale_price__lte=max_price)
         
-        serializer = MedicalEqipmentSerializer(queryset, many = True)
+        serializer = MedicalEquipmentSerializer(queryset, many=True)
         return Response(serializer.data)
     
     elif request.method == 'POST':
+        # Only vendors can list equipment
         if request.user.user_type != 'vendor':
-            return Response({
-                'error':'Only vendors can list eqipment.'
-            }, status=status.HTTP_403_FORBIDDEN)
-        serializer = MedicalEqipmentSerializer(data = request.data)
+            return Response(
+                {'error': 'Only vendors can list equipment'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
         
+        serializer = MedicalEquipmentSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(vendor = request.user)
+            serializer.save(vendor=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
 
 @api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
-def equipment_detail (request, pk):
+def equipment_detail(request, pk):
     try:
         equipment = Equipment.objects.get(pk=pk)
     except Equipment.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
     
-    if request.method == "GET":
-        serializer = MedicalEqipmentSerializer(equipment)
+    if request.method == 'GET':
+        serializer = MedicalEquipmentSerializer(equipment)
         return Response(serializer.data)
+    
     elif request.method == 'PUT':
+        # Only owner or admin can update
         if equipment.vendor != request.user and request.user.user_type != 'admin':
-            return Response({
-                'error':'You do not have permission to edit this equipment.'
-            }, status=status.HTTP_403_FORBIDDEN)
-        serializer = MedicalEqipmentSerializer(equipment, data = request.data, partial = True)
+            return Response(
+                {'error': 'You do not have permission to edit this equipment'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
         
-        if serializer.sis_valid():
+        serializer = MedicalEquipmentSerializer(equipment, data=request.data, partial=True)
+        if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
-    elif request.method =='DELETE':
-        if equipment.vandor != request.user and request.user.user_type != 'admin':
-            return Response({
-                'error':'You do not have the permission to delete this equipment.'
-            }, status=status.HTTP_403_FORBIDDEN)
+    
+    elif request.method == 'DELETE':
+        if equipment.vendor != request.user and request.user.user_type != 'admin':
+            return Response(
+                {'error': 'You do not have permission to delete this equipment'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
         equipment.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-    
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def category_list(request):
-    categories = EquipmentCategory.objects.filter(is_active = True)
-    serializer = EquipmentCategorySerializer(categories, many = True)
+    categories = EquipmentCategory.objects.filter(is_active=True)
+    serializer = EquipmentCategorySerializer(categories, many=True)
     return Response(serializer.data)
 
-
-@api_view(['POST', 'GET'])
-@permission_classes([AllowAny])#isauthenticated
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def request_inspection(request, equipment_id):
     try:
-        equipment = Equipment.objects.get(id = equipment_id)
+        equipment = Equipment.objects.get(id=equipment_id)
     except Equipment.DoesNotExist:
-        return Response({
-            'error': 'Equipment not found.',
-        }, status=status.HTTP_404_NOT_FOUND)
+        return Response(
+            {'error': 'Equipment not found'}, 
+            status=status.HTTP_404_NOT_FOUND
+        )
     
-    #check if inspection is already exists
-    existing_inspection = EquipmentInspection.objects.filter(equipment = equipment, status__in = ['pending', 'in_progress']).exists()
-
+    # Check if inspection already exists
+    existing_inspection = EquipmentInspection.objects.filter(
+        equipment=equipment, 
+        status__in=['pending', 'in_progress']
+    ).exists()
+    
     if existing_inspection:
-        return Response({
-            'error': 'Inspection already requested or in progress.',
-        }, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {'error': 'Inspection already requested or in progress'}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
     
-    inspection  = EquipmentInspection.objects.create(
-        equipment = equipment, 
-        inspection = request.user, #assigned to appropriate staff
-        inspection_date = request.data.get('preferred_date'),
-        notes = request.data.get('notes', '')
+    inspection = EquipmentInspection.objects.create(
+        equipment=equipment,
+        inspector=request.user,  # This should be assigned to appropriate staff
+        inspection_date=request.data.get('preferred_date'),
+        notes=request.data.get('notes', '')
     )
-
+    
     serializer = EquipmentInspectionSerializer(inspection)
     return Response(serializer.data, status=status.HTTP_201_CREATED)

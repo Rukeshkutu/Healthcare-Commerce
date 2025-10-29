@@ -1,15 +1,11 @@
 from django.contrib import admin
-from equipment.models import Equipment, EquipmentCategory, EquipmentImage, EquipmentInspection
+from .models import MedicalEquipment, EquipmentCategory, EquipmentImage, EquipmentInspection
 
-
-# Register your models here.
 class EquipmentImageInline(admin.TabularInline):
     model = EquipmentImage
     extra = 1
 
-
-@admin.register(Equipment)
-
+@admin.register(MedicalEquipment)
 class MedicalEquipmentAdmin(admin.ModelAdmin):
     list_display = ['name', 'brand', 'model', 'condition', 'transaction_type', 'sale_price', 'is_verified', 'is_available']
     list_filter = ['condition', 'transaction_type', 'is_verified', 'is_available', 'category']
@@ -18,7 +14,6 @@ class MedicalEquipmentAdmin(admin.ModelAdmin):
     readonly_fields = ['created_at', 'updated_at']
 
 @admin.register(EquipmentCategory)
-
 class EquipmentCategoryAdmin(admin.ModelAdmin):
     list_display = ['name', 'parent_category', 'is_active']
     list_filter = ['is_active']
