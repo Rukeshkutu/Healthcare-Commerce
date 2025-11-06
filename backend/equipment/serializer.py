@@ -157,7 +157,7 @@ class EquipmentImageSerializer(serializers.ModelSerializer):
 
 class MedicalEquipmentSerializer(serializers.ModelSerializer):
     images = EquipmentImageSerializer(many = True, read_only = True)
-    category_name = serializers.CharField(souce = 'category.name', read_only = True)
+    category_name = serializers.CharField(source = 'category.name', read_only = True)
     vendor_name = serializers.CharField(source ='vendor.get_full_name', read_only = True)
 
     class Meta:

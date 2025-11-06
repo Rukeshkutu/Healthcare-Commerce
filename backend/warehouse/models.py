@@ -40,7 +40,7 @@ class WarehouseStock(models.Model):
     added_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('equipment', 'wharehouse')
+        unique_together = ('equipment', 'warehouse')
 
     def __str__(self):
         return f"{self.equipment.name}- {self.warehouse.name}"

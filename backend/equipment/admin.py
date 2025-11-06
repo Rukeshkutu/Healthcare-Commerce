@@ -1,11 +1,11 @@
 from django.contrib import admin
-from .models import MedicalEquipment, EquipmentCategory, EquipmentImage, EquipmentInspection
+from .models import Equipment, EquipmentCategory, EquipmentImage, EquipmentInspection
 
 class EquipmentImageInline(admin.TabularInline):
     model = EquipmentImage
     extra = 1
 
-@admin.register(MedicalEquipment)
+@admin.register(Equipment)
 class MedicalEquipmentAdmin(admin.ModelAdmin):
     list_display = ['name', 'brand', 'model', 'condition', 'transaction_type', 'sale_price', 'is_verified', 'is_available']
     list_filter = ['condition', 'transaction_type', 'is_verified', 'is_available', 'category']
