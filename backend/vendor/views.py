@@ -56,4 +56,23 @@ def vendor_documents(request):
             serializer.save(vendor = vendor)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_performance(request):
+    vendor = get_object_or_404(Vendor, user = request.user)
+
+    performance_data = {
+        'total_listings': vendor.total_equipment_list,
+        'average_rating': vendor.rating,
+        'verification_status': vendor.is_verified,
+        'business_metrics':{ 
+            'years_in_business': vendor.years_in_business,
+            'completion_rate': 95,
+            'response_time': '2 hours'
+        }
+    }
+
+    return Response(performance_data)
+
