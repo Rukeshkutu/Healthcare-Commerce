@@ -38,6 +38,7 @@ class FranchiseRegistrationSerializer(serializers.ModelSerializer):
                 'password': validated_data.pop('password'),
                 'phone_number': validated_data.pop('phone_number'),
                 'user_type': 'franchise'
+    
             }
             
             user = User.objects.create_user(**user_data)
