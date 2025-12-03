@@ -116,9 +116,10 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return user
         
 
-class LoginSerializer(serializers.ModelSerializer):
-    username = serializers.CharField()
-    password = serializers.CharField()
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField(required = True)
+    password = serializers.CharField(required = True, write_only = True)
+
 
     def validate(self, attrs):
         username = attrs.get('username')

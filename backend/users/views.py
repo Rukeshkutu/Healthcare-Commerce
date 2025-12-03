@@ -1,6 +1,6 @@
 # from django.shortcuts import render
 from .models import User, UserProfile
-from .serializers import UserProfileSerializer, ChangePasswordSerializer, UserSerializer, LoginSerializer, UserUpdateSerializer, PasswordResetRequestSerializer
+from .serializers import UserProfileSerializer, ChangePasswordSerializer, UserSerializer, LoginSerializer, UserUpdateSerializer, PasswordResetRequestSerializer, UserRegistrationSerializer
 from django.contrib.auth import update_session_auth_hash
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -92,7 +92,7 @@ from equipment.models import Equipment
 @permission_classes([AllowAny])
 def register_user(request):
     if request.method == 'POST':
-        serializer = UserProfileSerializer(data = request.data)
+        serializer = UserRegistrationSerializer(data = request.data)
 
         if serializer.is_valid():
             user = serializer.save()
@@ -108,7 +108,7 @@ def register_user(request):
                     'access':str(refresh.access_token),
                 }
             }, status.HTTP_201_CREATED)
-        return Response(serializer.error, status = status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['POST'])
